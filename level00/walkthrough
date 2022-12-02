@@ -1,0 +1,12 @@
+1/ ls -la
+2/ there is a level0 binary
+3/ launch it, it segfault
+4/ launch it with arg, it say nop
+5/ disassemble it with gdb
+6/ understand the general code flow
+7/ see that atoi is called, followed by a cmp that test a integer value
+8/ convert it to decimal, it 423
+9/ launch ./level0 423
+10/ it launch execv('/bin/sh')
+11/ cat /home/user/level1/.pass
+    1fe8a524fa4bec01ca4ea2a869af2a02260d4a7d5fe7e7c24d8617e6dca12d3a
