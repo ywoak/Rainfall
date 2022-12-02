@@ -1,2 +1,4 @@
 # Rainfall
-Binary exploitation from 0x0 to 0x4865726f
+
+Challenges to learn exploitation of ELF (-like) Binary
+With a focus on client server application
