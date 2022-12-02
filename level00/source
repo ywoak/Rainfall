@@ -1,0 +1,19 @@
+int main(int argc, char **argv) {
+
+    int nb = atoi(argv[1]);
+    char *err = "No !\n"
+    if (nb == 423) {
+        char *dup = strdup("/bin/sh");
+
+        int uid = getegid();
+        int gid = getegid();
+
+        setresgid(gid, gid, gid);
+        setresuid(uid, uid, uid);
+        execv("/bin/sh", NULL);
+    }
+    else {
+       write(1, err, 5);
+    }
+    return (0);
+}
