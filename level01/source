@@ -1,0 +1,10 @@
+int run() {
+    fwrite("Good... Wait what?", 1, 13, STDOUT);
+    system("/bin/sh");
+}
+
+int main() {
+    char input[72];
+    get(input);
+    return (0);
+}
