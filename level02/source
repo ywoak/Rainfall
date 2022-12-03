@@ -1,0 +1,19 @@
+int p() {
+
+    char buffer[76];
+
+    fflush();
+    get(buffer);
+
+    if (eip & 0xb000000) {
+        printf("%p\n", eip);
+        exit(1);
+    }
+
+    char *str = strdup(buffer)
+    return (str);
+}
+
+int main() {
+    p()
+}
