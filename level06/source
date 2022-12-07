@@ -1,0 +1,23 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+void n() {
+	system("/bin/cat /home/user/level7/.pass");
+}
+
+void m() {
+	printf("Nope\n");
+}
+
+int main(int ac, char **av) {
+	void	*ret_malloc_64;
+	char	*ret_malloc_4;
+
+	ret_malloc_64 = malloc(64);
+	ret_malloc_4 = malloc(4);
+	*ret_malloc_4 = m;
+	strcpy(ret_malloc_64, av[1]);
+	ret_malloc_4();
+	return (0);
+}

@@ -1,0 +1,27 @@
+For the level we have to do write in a heap overflow
+
+with objdump we see 3 functions
+
+a n() which is not called and contains a system("/bin/cat /home/user/level7/.pass");
+a m() function which is called at the end of main by its address (call 0x8048468);
+
+in the main there is an alloc of 64 bytes dedicated to strcpy the first arg (argv[1];
+and an alloc of 4 byte to contains a number (which is the address of m(), but we will overwrite it)
+
+so the main is doing an strcpy(alloc_64byte, argv[1]) without any check on argv[1] length, here is our overflow
+and then call call our alloc of 4 byte as a pointer to function;
+
+since heap is structured like this for each alloc:
+
+0x00000001 4 byte for the address, 4 byte for the size, the rest for the datas.....
+0x00000002 ....
+0x00000003 ....
+0x00000004 .....
+
+so if we declare 2 pointer on the heap, at they time on the code, they will be side to side with a padding of 8 bytes
+that why we can overwrite the second pointer and set the address of what we want the code to call
+
+python -c 'import sys; sys.stdout.write("a"*64 + "X"*8 + "\x54\x84\x04\x08")' > /tmp/input
+./level6 $(cat /tmp/input3)
+
+payload: 64 'A' to fill the heap buffer, 8 'X' off padding to write the heap header of the next alloc, and then replace by the address
