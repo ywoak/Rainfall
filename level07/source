@@ -34,4 +34,7 @@ int main(int ac, char **av) {
     0x080485f0 <+207>:   mov    DWORD PTR [esp],0x8048703
     0x080485f7 <+214>:   call   0x8048400 <puts@plt>
 
+
+    the fgets get the value of the fopen in an address that is used in printf
+    %s argument, we should redirect to this function with an GOT overwrite or EIP address change.
 }

