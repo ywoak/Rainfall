@@ -1,64 +1,93 @@
-#include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <stdint.h>
 
-int main() {
+char *auth;
+char *service;
 
-    char *auth;
-    char *service;
+int	main() {
+	char buf[80]; //size of buf i actually dont know
 
-    char *format = "%p, %p\n"
-    char *buffer[]
+	while (1) { // Can replace the while(true) else->break, with a do-while
+		printf("%p %p \n", auth, service);
+		if (fgets(buf, 80, stdin)) {
 
-    printf("%p, %p\n", auth, service);
+			int32_t ecx = 5;
+			char *esi = buf;
+			char *edi = "auth ";
+			while (*esi == *edi && ecx > 0) {
+				esi++;
+				edi++;
+				ecx--;
+			}
+			uint8_t dl = *esi > *edi;
+			uint8_t al = *esi < *edi;
 
-    char *ret = fgets(STDLIN, 0x80, buffer);
+			if (!(dl - al)) {
+				auth = malloc(4);
+				*auth = 0;
+				ecx = -1;
+				edi = buf+5;
+				while (buf+5) {
+					ecx--;
+				}
+				ecx--;
+				if (ecx < 31) {
+					strcpy(auth, buf+5);
+				}
+			}
 
-    if (ret) {
+			ecx = 5;
+			*esi = buf;
+			*edi = "reset";
+			while (*esi == *edi && ecx > 0) {
+				esi++;
+				edi++;
+				ecx--;
+			}
+			dl = *esi > *edi;
+			al = *esi < *edi;
 
-        ecx = 5
-        esi = buffer
-        edi = "auth "
+			if (!(dl - al)) {
+				free(auth);
+			}
 
+			ecx = 6;
+			*esi = buf;
+			*edi = "service";
+			while (*esi == *edi && ecx > 0) {
+				esi++;
+				edi++;
+				ecx--;
+			}
+			dl = *esi > *edi;
+			al = *esi < *edi;
 
-        while (*esi == *edi) {
-            *esi++
-            *edi++;
-        }
+			if (!(dl - al)) {
+				service = strdup(buf + 7);
+			}
 
-        uint8_t dl = *esi > *edi;   // seta dl
-        uint8_t al = *esi < *edi;   // setb al
+			ecx = 5;
+			*esi = buf;
+			*edi = "login";
+			while (*esi == *edi && ecx > 0) {
+				esi++;
+				edi++;
+				ecx--;
+			}
+			dl = *esi > *edi;
+			al = *esi < *edi;
 
-        if buffer start with "auth " {
-
-            auth = malloc(4);
-
-
-
-            ecx = 0xffffffff
-            edi = buffer + 5
-
-            while (ecx != 0 && *edi != 0) {
-                ecx--;
-            }
-
-            not ecx = reverse bit FFFFFFFD become 00000002
-
-            cmp ecx == 30
-            ja {
-
-                strcpy(0x8049aac, buffer + 5)
-
-            }
-
-        }
-
-
-
-
-
-
-    }
-
-
+			if (!(dl - al)) {
+				if (!(auth+32))
+					fwrite("Password:\n", 1, 10, stdout);
+				else
+					system("/bin/sh");
+			}
+		}
+		else
+			return 0;
+	}
+	return 0;
 }

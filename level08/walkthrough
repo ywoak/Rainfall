@@ -1,0 +1,8 @@
+The program loop on fgets(buf, 80) while it returns a correct value, so on the first loop we write auth and it malloc(4) auth without writing anything inside it, and we want the login command ot launch us a shell, for that we need to write something inside auth+32, and when we service 123456789abcdef we have service that is 16 byte further than auth, and we write 16 bytes in it so auth+32 is not empty and then login launch us a shell
+
+Step 1.
+"auth "
+Step 2.
+"service 123456789abcdef"
+Step 3.
+"login"
