@@ -1,0 +1,64 @@
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+int main() {
+
+    char *auth;
+    char *service;
+
+    char *format = "%p, %p\n"
+    char *buffer[]
+
+    printf("%p, %p\n", auth, service);
+
+    char *ret = fgets(STDLIN, 0x80, buffer);
+
+    if (ret) {
+
+        ecx = 5
+        esi = buffer
+        edi = "auth "
+
+
+        while (*esi == *edi) {
+            *esi++
+            *edi++;
+        }
+
+        uint8_t dl = *esi > *edi;   // seta dl
+        uint8_t al = *esi < *edi;   // setb al
+
+        if buffer start with "auth " {
+
+            auth = malloc(4);
+
+
+
+            ecx = 0xffffffff
+            edi = buffer + 5
+
+            while (ecx != 0 && *edi != 0) {
+                ecx--;
+            }
+
+            not ecx = reverse bit FFFFFFFD become 00000002
+
+            cmp ecx == 30
+            ja {
+
+                strcpy(0x8049aac, buffer + 5)
+
+            }
+
+        }
+
+
+
+
+
+
+    }
+
+
+}
