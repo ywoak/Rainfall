@@ -71,10 +71,10 @@ void main(int ac, char **av) {
     exit(1);
   }
 
-  // mov dword [esp], 0x6c       ; [0x6c:4]=-1 ; 108 ; 'l'
+  // mov dword [esp], 0x6c
   // call sym operator new(unsigned int)
   // mov ebx, eax
-  N obj = new(0x6c); // I think the arg is the size inside ? Since the property seems to be allocated at 0x68
+  N obj = new(0x6c); // I think the arg is the size of obj ? Since the property seems to be allocated at 0x68
 
   // mov dword [esp+0x4], 5
   // mov dword [esp], ebx
@@ -82,7 +82,7 @@ void main(int ac, char **av) {
   N::N(obj, 5); // set some field inside obj to 5
 
   // mov dword [esp+0x1c], ebx
-  // mov dword [esp], 0x6c       ; [0x6c:4]=-1 ; 108 ; 'l'
+  // mov dword [esp], 0x6c
   // call sym operator new(unsigned int)
   N new_ob = new(0x6c);
 
@@ -111,7 +111,7 @@ void main(int ac, char **av) {
   N::setAnnotation(obj, av[1]); // memcpy whats inside av[1] in obj + 4
 
   // mov eax, dword [esp+0x10]    ; eax = new_ob
-  // mov eax, dword [eax]         ; ??
+  // mov eax, dword [eax]         ;                 Edit! this is where i segv
   // mov edx, dword [eax]         ; ? wtf
   // This is probably some sort of virtual call, where the first load the obj virtual table
   // and the second load the first function, since there is no offset. I think..
@@ -121,7 +121,7 @@ void main(int ac, char **av) {
   // mov eax, dword [esp+0x10]
   // mov dword [esp], eax
   // call edx
-  new_obj.operator+(obj);
+  new_obj.operator+(obj); // at least without memory corruption
 
   // mov ebx, dword [ebp-0x4]     ; obj; esp+0x1c; sub esp, 0x20, but why store it here ?
   // leave

