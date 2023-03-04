@@ -1,0 +1,27 @@
+-- Static analysis --
+First fill source.c with the usual command, it was an easy program to reverse
+1. We can see that buff[40] and atoi_ret are rigt after in the stack memory frame
+If we have the opportunity to overflow buf we can overwrite atoi_ret
+2. Next thing we see in see is the win block, we need our atoi_ret to be = 0x574f4c46 // Note that this is 'FLOW' in string
+Seems fairly easy except for the fact we need smth below < 10 to enter the if after atoi
+3. We have a memcpy of size atoi_ret * 4, so ofc we want it to be 44 so we can right past the buff into the array
+
+-- Vulnerability --
+Atoi returns an int, but memcpy implicitely cast it to size_t
+So by itself this is bad, but it would only be useful for number from ~2M to ~4M
+Here we want a low number, but its still reachable because the number we provide will be multiplied by 4
+Also, our number need to be a negative number to bypass the first `if < 10`
+
+-- Overflow --
+2^32 is 0xffffffff, so uint32_t max
+if from int_max we do + 1 we have 1, because of the CF that needs to be ditched (see CF/OF eflags explanation if this is unclear)
+So we would want our final number to be 44 remenber so (0xffffffff+44)/4 = 1073741812
+
+-- Exploit --
+1. Provide it negatively (we can since int_min is larger) to bypass our `if < 10`
+2. It will then * 4, so with overflow of the high bit it will be 44
+3. Now we will copy enough to modify our atoi_ret, lets write atoi_ret to be the value that we wanted
+
+./bonus1 $(python -c "print '-1073741812'+ ' '+ 'A'*40+'FLOW'")
+Notice that python2 interpret any data as byte, so providing the string representation for it is fine
+Also available is a pwntool script to make thing quicker, based on what im using in override level9 (i actually did override before this one)
