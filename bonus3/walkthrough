@@ -1,0 +1,20 @@
+-- Code analysis --
+Code open and read .pass and store it into a buffer
+
+```
+if (ac == 2) {
+```
+-> We need 2 arg
+
+```
+buff[atoi(av[1])] = 0;
+```
+-> buff[atoi(av[1])] = 0 // Will only consider what before that to be the string to compare
+
+```
+if (!strcmp(buff, av[1]))
+  execl("/bin/sh", "sh", 0);
+```
+-> Win block, if our buffer match our atoi(av[1])
+atoi('') = 0 so at buff[0] = 0, because of the code right above
+So we match the strcmp with the arg and what inside buf
